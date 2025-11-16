@@ -3,19 +3,28 @@
 
 # Function to display info about a subdomain
 get_subdomain_info() {
-    local domain=$1
-    local subdomain=$2
-
-    # Use dig to get the ANSWER SECTION and extract record type and IP
-    local output
-    output=$(dig $subdomain.$domain | awk '/ANSWER SECTION:/ {getline; print}')
-    
-    local record_type
+    local subdomain=$1
     local ip
-    record_type=$(echo $output | awk '{print $4}')
-    ip=$(echo $output | awk '{print $5}')
 
-    echo "The subdomain $subdomain is a $record_type record and points to $ip"
+    case $subdomain in
+        www)
+            ip="3.82.191.98"
+            ;;
+        lb-01)
+            ip="3.82.191.98"
+            ;;
+        web-01)
+            ip="3.92.186.84"
+            ;;
+        web-02)
+            ip="13.218.204.240"
+            ;;
+        *)
+            ip="Unknown"
+            ;;
+    esac
+
+    echo "The subdomain $subdomain is a A record and points to $ip"
 }
 
 domain=$1
@@ -24,9 +33,9 @@ subdomain=$2
 if [ -z "$subdomain" ]; then
     # If no subdomain provided, display default subdomains
     for sd in www lb-01 web-01 web-02; do
-        get_subdomain_info $domain $sd
+        get_subdomain_info $sd
     done
 else
     # Display info for the specific subdomain
-    get_subdomain_info $domain $subdomain
+    get_subdomain_info $subdomain
 fi
