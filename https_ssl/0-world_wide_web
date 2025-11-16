@@ -1,60 +1,38 @@
 #!/usr/bin/env bash
-# Displays the type and destination of subdomains for a given domain
+# Script to display information about domain subdomains
 
-# Function to display info for the quiz (public IPs)
-get_quiz_ip() {
-    local subdomain=$1
-    local ip
-    case $subdomain in
-        www|lb-01)
-            ip="54.210.47.110"
-            ;;
-        web-01)
-            ip="34.198.248.145"
-            ;;
-        web-02)
-            ip="54.89.38.100"
-            ;;
-    esac
-    echo "The subdomain $subdomain is a A record and points to $ip"
-}
+# Ignore shellcheck warning SC2086
+# shellcheck disable=SC2086
 
-# Function to display the server's actual IP
-get_server_ip() {
-    local subdomain=$1
-    local ip
-    case $subdomain in
-        www|lb-01)
-            ip="3.82.191.98"
-            ;;
-        web-01)
-            ip="3.92.186.84"
-            ;;
-        web-02)
-            ip="13.218.204.240"
-            ;;
-    esac
-    echo "$ip"
+display_info() {
+    subdomain=$1
+    domain=$2
+    full_domain="${subdomain}.${domain}"
+
+    # Run dig and extract type and destination using awk
+    dig_output=$(dig $full_domain +short)
+    record_type=$(dig $full_domain | awk '/ANSWER SECTION/{getline; print $4}')
+    destination=$(echo "$dig_output" | tail -n1)
+
+    if [[ -n "$record_type" && -n "$destination" ]]; then
+        echo "The subdomain ${subdomain} is a ${record_type} record and points to ${destination}"
+    else
+        echo "No record found for ${full_domain}"
+    fi
 }
 
 domain=$1
 subdomain=$2
 
-# Output for quiz/dig style checks
-if [ -z "$subdomain" ]; then
-    for sd in www lb-01 web-01 web-02; do
-        get_quiz_ip $sd
-    done
-else
-    get_quiz_ip $subdomain
+if [[ -z "$domain" ]]; then
+    echo "Usage: $0 domain [subdomain]"
+    exit 1
 fi
 
-# Output for the "Your subdomain points to server IP" checks
-echo "Your subdomain www points to your lb-01 server IP"
-get_server_ip www
-
-echo "Your subdomain web-01 points to your web-01 server IP"
-get_server_ip web-01
-
-echo "Your subdomain web-02 points to your web-02 server IP"
-get_server_ip web-02
+if [[ -z "$subdomain" ]]; then
+    for s in www lb-01 web-01 web-02; do
+        display_info $s $domain
+    done
+else
+    display_info $subdomain $domain
+fi
